@@ -1,5 +1,5 @@
 import cv2
-from os import listdir, remove, path
+from os import listdir, remove, path, rmdir
 import re
 from detector import Detector
 from glob import glob
@@ -11,7 +11,7 @@ class Camera:
         self.is_pet = pet
         self.detector = Detector()
         self.consecutive = True
-        self.frame_dir = "detected motion frames"
+        self.frame_dir = "frames"
 
     @staticmethod
     def atoi(text):
@@ -21,17 +21,18 @@ class Camera:
         return [self.atoi(c) for c in re.split(r'(\d+)', text)]
 
     def save_detected_motion(self, img):
+
         frame_list = listdir(self.frame_dir)
         if frame_list:
             frame_list.sort(key=self.natural_keys)
             frame_number = re.findall(r'\d+', frame_list[-1])[0]
-            cv2.imwrite(f"detected motion frames/frame#{int(frame_number) + 1}.png", img)
+            cv2.imwrite(f"frames/frame#{int(frame_number) + 1}.png", img)
         else:
-            cv2.imwrite("detected motion frames/frame#1.png", img)
+            cv2.imwrite("frames/frame#1.png", img)
 
     def make_video(self):
         img_array = []
-        for filename in glob('detected motion frames/*.png'):
+        for filename in glob('frames/*.png'):
             img = cv2.imread(filename)
             height, width, layers = img.shape
             size = (width, height)
@@ -42,13 +43,14 @@ class Camera:
                 video_list.sort(key=self.natural_keys)
                 video_number = int(re.findall(r'\d+', video_list[-1])[0])
             else:
-                video_number = 1
+                video_number = 0
             out = cv2.VideoWriter(f'motions/motion#{video_number + 1}.avi', cv2.VideoWriter_fourcc(*'DIVX'), 5, size)
             for image in img_array:
                 out.write(image)
             out.release()
             for f in listdir(self.frame_dir):
                 remove(path.join(self.frame_dir, f))
+            rmdir(self.frame_dir)
         except NameError:
             return
 
